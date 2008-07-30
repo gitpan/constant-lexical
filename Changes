@@ -1,0 +1,7 @@
+Revision history for constant::lexical
+
+0.01    29 July, 2008
+        Renamed to constant::lexical, as suggested by brian d foy.
+
+0.01    24 July, 2008
+        Released as constant::private
