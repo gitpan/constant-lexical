@@ -2,7 +2,7 @@ use 5.008;
 
 package constant::lexical;
 
-our $VERSION = '0.01';
+our $VERSION = '1.00000';
 
 no constant();
 use Sub::Delete;
@@ -47,7 +47,7 @@ constant::lexical - Perl pragma to declare lexical compile-time constants
 
 =head1 VERSION
 
-0.01 (beta)
+1.00000
 
 =head1 SYNOPSIS
 

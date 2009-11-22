@@ -1,4 +1,4 @@
-constant::lexical, version 0.01 (beta)
+constant::lexical, version 1.00000
 
 This module creates constants in the manner of constant.pm, but
 deletes them when the enclosing scope finishes compiling.

@@ -1,5 +1,6 @@
 #!perl -w
 
+use lib 't';
 use Test::More tests => 11;
 
 {
