@@ -1,5 +1,10 @@
 Revision history for constant::lexical
 
+2        14 March, 2010
+       • True lexical constants for perl 5.11.2 and higher
+       • For older perls, we now require constant 1.03 explicitly, so
+         users don’t have to.
+
 1.00000  22 November, 2009
          No changes apart from the version number.
 

@@ -1,7 +1,7 @@
 #!perl -w
 
 use lib 't';
-use Test::More tests => 11;
+use Test::More tests => 18;
 
 {
 	{
@@ -33,3 +33,33 @@ sub thang { 78 }
 is thang, 78, 'overridden sub restored';
 is thing, 34, 'overridden constant restored';
 is ${'thing'}[0], 1,'and other glot slobs untouched';
+
+SKIP: {
+  skip "only works in perl 5.11.2 and higher", 5 if $] < 5.011002;
+  no warnings;
+  use constant::lexical "splext" => "ved";
+  package Snit;
+  ::is splext, "ved", "constants span package boundaries";
+  ::is main::splext, "main::splext", "Fully-qualified constants fail";
+  ::is eval "splext", "ved", "evals can see constants";
+  use constant::lexical "sclat" => [];
+  ::is eval "ref sclat", "ARRAY", "refs and what-not survive into evals";
+  eval '
+   sub grile { return eval{&{"splew"}} }
+   {
+    use constant::lexical splew => "sclor";
+    BEGIN{::is grile, undef, "constants are not just sub localisations"};
+   }
+ ';
+}
+
+# Something I almost broke in version 2:
+{package ctelp; sub dreen { "grare" } }
+{
+ use constant'lexical 'dreen' => 'fing';
+ is eval 'dreen ctelp', 'grare',
+  'constant does not override method of known package';
+
+# And another:
+ is eval { &dreen }, 'fing', '& notation';
+}

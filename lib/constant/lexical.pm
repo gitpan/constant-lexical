@@ -2,10 +2,17 @@ use 5.008;
 
 package constant::lexical;
 
-our $VERSION = '1.00000';
+our $VERSION = '2';
 
-no constant();
+my $old = '#line ' . (__LINE__+1) . " " . __FILE__ . "\n" . <<'__';
+
+no constant 1.03 ();
 use Sub::Delete;
+BEGIN {
+ 0+$] eq 5.01
+  and VERSION Sub::Delete >= .03
+  and VERSION Sub::Delete 1.00001 # %^H scoping bug
+}
 
 sub import {
 	$^H |= 0x20000; # magic incantation to make %^H work before 5.10
@@ -38,6 +45,87 @@ sub DESTROY { for(@{+shift}) {
 }}
 
 1;
+__
+
+my $new = '#line ' . (__LINE__+1) . " " . __FILE__ . "\n" . <<'__';
+
+require Lexical'Sub;
+
+sub import {
+  shift;
+  my @args;
+  if(@_ == 1 && ref $_[0] eq 'HASH') {
+   _validate(keys %{$_[0]});
+    while(my($k,$v) = each %{$_[0]}) {
+     push @args, $k, sub(){ $v };
+    }
+  }
+  elsif(@_ == 2) {
+   _validate($_[0]);
+    my $v = pop;
+    @args = ($_[0], sub(){ $v });
+  }
+  else {
+   _validate($_[0]);
+    @args = (shift, do { my @v = @'_; sub(){ @v } });
+  }
+  import Lexical'Sub @args;
+ _:
+}
+
+# Plagiarised from constant.pm
+
+# Some names are evil choices.
+my %keywords
+ = map +($_, 1), qw{ BEGIN INIT CHECK END DESTROY AUTOLOAD UNITCHECK };
+
+my $normal_constant_name = qr/^_?[^\W_0-9]\w*\z/;
+my $tolerable = qr/^[A-Za-z_]\w*\z/;
+my $boolean = qr/^[01]?\z/;
+
+sub _validate {
+ for(@_) {
+  defined or require Carp, Carp'croak("Can't use undef as constant name");
+  # Normal constant name
+  if (/$normal_constant_name/ and !$keywords{$_}) {
+      # Everything is okay
+
+  # Starts with double underscore. Fatal.
+  } elsif (/^__/) {
+      require Carp;
+      Carp::croak("Constant name '$_' begins with '__'");
+
+  # Maybe the name is tolerable
+  } elsif (/$tolerable/) {
+      # Then we'll warn only if you've asked for warnings
+      if (warnings::enabled()) {
+          if ($keywords{$_}) {
+              warnings::warn("Constant name '$_' is a Perl keyword");
+          }
+      }
+
+  # Looks like a boolean
+  # use constant FRED == fred;
+  } elsif (/$boolean/) {
+      require Carp;
+      if (@_) {
+          Carp::croak("Constant name '$_' is invalid");
+      } else {
+          Carp::croak("Constant name looks like boolean value");
+      }
+
+  } else {
+     # Must have bad characters
+      require Carp;
+      Carp::croak("Constant name '$_' has invalid characters");
+  }
+ }
+}
+
+1;
+__
+
+eval($] < 5.011002 ? $old : $new) or die $@;
 
 __END__
 
@@ -47,7 +135,7 @@ constant::lexical - Perl pragma to declare lexical compile-time constants
 
 =head1 VERSION
 
-1.00000
+2
 
 =head1 SYNOPSIS
 
@@ -63,7 +151,6 @@ constant::lexical - Perl pragma to declare lexical compile-time constants
   use constant::lexical \%hash_of_constants;
   use constant::lexical WEEKDAYS => @weekdays; # list
 
-  use constant 1.03 ();
   use constant::lexical { PIE        => 4 * atan2(1,1),
                           CHEESECAKE => 3 * atan2(1,1),
                          };
@@ -81,19 +168,38 @@ exposed as methods, so this is where lexical constants come in handy.
 
 =head1 PREREQUISITES
 
-This module requires L<perl> 5.8.0 or later and L<Sub::Delete>, which you 
+This module requires L<perl> 5.8.0 or later and, depending on your version
+of perl, one of the following modules, which you
 can
-get from the CPAN.
+get from the CPAN:
 
-If you want to create multiple constants in a single C<use> statement, you
-will need C<constant> version 1.03 or higher.
+=over
+
+=item *
+
+For perl 5.11.2 and higher: L<Lexical::Sub> 
+
+=item *
+
+For lower perl versions: L<Sub::Delete>
+
+=back
 
 =head1 BUGS
+
+The following three bugs have been fixed for perl 5.11.2 and higher, but
+are still present for older versions of perl:
+
+=over
+
+=item *
 
 These constants are no longer available at run time, so they won't work
 in a string C<eval> (unless, of course, the C<use> statement itself is 
 inside the
 C<eval>).
+
+=item *
 
 These constants actually are accessible to other scopes during
 compile-time, as in the following example:
@@ -104,18 +210,34 @@ compile-time, as in the following example:
           BEGIN { foo }
   }
 
+=item *
+
 If you switch to another package within a constant's scope, it (the 
 constant) will
 apparently disappear.
 
-I may be able to solve these three issues if/when perl introduces lexical
-subs.
+=for comment
+I tried fixing this in perl 5.10 by detecting ‘package’ statements. 
+Detecting those is
+difficult. I tried using the approach in B::Hooks::OP::Check::StashChange,
+which is to install a custom PL_check routine for every op and then see
+when an op belonging to a different package is compiled, but that applies
+also to string evals in other packages. What would happen is that the
+constants would be visible to every eval that occurs while the scope to
+which the constants belong is being compiled. That type of leak is worse
+than the current situation.
+
+=back
 
 If you find any other bugs, please report them to the author via e-mail.
 
 =head1 ACKNOWLEDGEMENTS
 
-The idea of using C<%^H> was stolen from L<namespace::clean>.
+The idea of using objects in C<%^H> (in the pre-5.11.2 code) was stolen
+from L<namespace::clean>.
+
+Some of the code for the perl 5.11.2 version is plagiarised from
+L<constant.pm|constant> by Tom Phoenix.
 
 =head1 AUTHOR & COPYRIGHT
 
@@ -126,6 +248,6 @@ under the same terms as perl.
 
 =head1 SEE ALSO
 
-L<constant>, L<Sub::Delete>, L<namespace::clean>
+L<constant>, L<Sub::Delete>, L<namespace::clean>, L<Lexical::Sub>
 
 =cut

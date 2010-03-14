@@ -1,11 +1,11 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         constant-lexical
-version:      1.00000
+version:      2
 version_from: lib/constant/lexical.pm
 installdirs:  site
 requires:
-    constant:                      0
+    constant:                      1.03
     Sub::Delete:                   0
     Test::More:                    0
 
