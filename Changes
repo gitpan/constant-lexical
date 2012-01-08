@@ -1,5 +1,11 @@
 Revision history for constant::lexical
 
+2.0001   8 January, 2012
+       •‘use constant::lexical’ with no arguments now works.  (Oops!)
+         Thanks to Neil Bowers for reporting this (RT #73694).
+       • String evals no longer stop  constants  from  going  out  of
+         scope in perl 5.10.x.
+
 2        14 March, 2010
        • True lexical constants for perl 5.11.2 and higher
        • For older perls, we now require constant 1.03 explicitly, so

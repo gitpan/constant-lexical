@@ -20,6 +20,9 @@ WriteMakefile(
            && VERSION Sub::Delete >= .03
                        ? 1.00001 # %^H scoping bug
                        : 0,
+          eval 'require Hash::Util::FieldHash'
+           ? (Tie'Hash => 0)
+           : (),
          ),
 # for testing:
 	Test::More => 0,

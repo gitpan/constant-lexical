@@ -2,11 +2,13 @@
 
 use lib 't';
 use Test::More tests => 18;
+use constant::lexical;
 
 {
 	{
 		use constant::lexical CAKE => 3.14;
 		is CAKE, 3.14, 'within a constant\'s scope';
+		eval '';
 	}
 	use constant::lexical { _foo => 1, _bar => 2 };
 	use constant::lexical _baz => 3,4,5;

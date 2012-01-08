@@ -2,24 +2,37 @@ use 5.008;
 
 package constant::lexical;
 
-our $VERSION = '2';
+our $VERSION = '2.0001';
 
 my $old = '#line ' . (__LINE__+1) . " " . __FILE__ . "\n" . <<'__';
 
 no constant 1.03 ();
+use constant hufh => eval 'require Hash::Util::FieldHash';
 use Sub::Delete;
 BEGIN {
  0+$] eq 5.01
   and VERSION Sub::Delete >= .03
   and VERSION Sub::Delete 1.00001 # %^H scoping bug
 }
+hufh and eval '
+  Hash::Util::FieldHash::fieldhash %hh;
+  use Tie::Hash;
+  {
+   package constant::lexical::_hhfh;
+   @ISA = "Tie::StdHash";
+   sub DELETE { constant::lexical::DESTROY(SUPER::DELETE{@_}) }
+  }
+  tie %hh, constant::lexical::_hhfh::;;
+';
 
 sub import {
 	$^H |= 0x20000; # magic incantation to make %^H work before 5.10
 	shift;
+	return unless @ '_;
 	my @const = @_ == 1 && ref $_[0] eq 'HASH' ? keys %{$_[0]} : $_[0];
 	my $stashname = caller()."::"; my $stash = \%$stashname;
-	push @{$^H{+__PACKAGE__} ||= bless[]}, map {
+	push @{hufh ? $hh{\%^H} ||= [] : ($^H{+__PACKAGE__} ||= bless[])},
+	 map {
 		my $fqname = "$stashname$_"; my $ref;
 		if(exists $$stash{$_} && defined $$stash{$_}) {
 			$ref = ref $$stash{$_} eq 'SCALAR'
@@ -53,6 +66,7 @@ require Lexical'Sub;
 
 sub import {
   shift;
+  return unless @ '_;
   my @args;
   if(@_ == 1 && ref $_[0] eq 'HASH') {
    _validate(keys %{$_[0]});
@@ -135,7 +149,7 @@ constant::lexical - Perl pragma to declare lexical compile-time constants
 
 =head1 VERSION
 
-2
+2.0001
 
 =head1 SYNOPSIS
 
@@ -233,15 +247,18 @@ If you find any other bugs, please report them to the author via e-mail.
 
 =head1 ACKNOWLEDGEMENTS
 
-The idea of using objects in C<%^H> (in the pre-5.11.2 code) was stolen
-from L<namespace::clean>.
+The idea of using objects in C<%^H> (in the pre-5.10 code) was stolen
+from L<namespace::clean>.  The idea of doing cleanup in a DELETE method on
+a tied field hash (in the 5.10 code) was likewise stolen from
+L<namespace::clean>.
 
 Some of the code for the perl 5.11.2 version is plagiarised from
 L<constant.pm|constant> by Tom Phoenix.
 
 =head1 AUTHOR & COPYRIGHT
 
-Copyright (C) Father Chrysostomos (sprout at, um, cpan dot org)
+Copyright (C) 2008, 2010, 2012 Father Chrysostomos (sprout at, um, cpan dot
+org)
 
 This program is free software; you may redistribute or modify it (or both)
 under the same terms as perl.

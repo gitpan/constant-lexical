@@ -1,4 +1,4 @@
-constant::lexical, version 2
+constant::lexical, version 2.0001
 
 This module creates constants in the manner of constant.pm, but
 deletes them when the enclosing scope finishes compiling.
@@ -6,7 +6,10 @@ deletes them when the enclosing scope finishes compiling.
 
 CHANGES IN THIS RELEASE
 
-True lexical constants for perl 5.11.2 and higher
+•‘use constant::lexical’ with no arguments now works. (Oops!)  Thanks
+  to Neil Bowers for reporting this (RT #73694).
+• String evals no longer stop constants from going out  of  scope  in
+  perl 5.10.x.
 
 
 INSTALLATION
@@ -45,7 +48,7 @@ Or try using man (it's faster, in my experience):
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2008, 2010 Father Chrysostomos
+Copyright (C) 2008, 2010, 2012 Father Chrysostomos
 
 This program is free software; you may redistribute it, modify it, or
 both, under the same terms as perl.
